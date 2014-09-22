@@ -1,4 +1,6 @@
 // YOUR CODE HERE:
+var buttons;
+
 var app = {
   server: 'https://api.parse.com/1/classes/chatterbox',
   init: function() {},
@@ -25,17 +27,24 @@ var app = {
       //data: JSON.parse(message),
       contentType: 'application/json',
       success: function (data) {
-        // parse the data
+        // console.log(data);
+        app.clearMessages();
+        $('#roomSelect').empty();
+        var rooms = [];
         for (var i = 0; i < data.results.length; i++){
           for (var key in data.results[i]) {
             data.results[i][key] = app.scrubber(data.results[i][key]);
           }
+          app.addMessage(data.results[i]);
+          if (rooms.indexOf(data.results[i].roomname) === -1){
+            rooms.push(data.results[i].roomname);
+            app.addRoom(data.results[i].roomname);
+          }
         }
-        console.log(data.results);
-        // data.scrubber(dataObject);
-        // pass data to scrubber fn to get clean data
-        // check clean data against expected, deal with unexpected
-        // append data to DOM ul
+        buttons = $('button')
+        buttons.click(function(){
+          console.log(this);
+        });
       },
       error: function (data) {
         // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
@@ -45,5 +54,22 @@ var app = {
   },
   scrubber: function(data) {
     return data.replace(/[&<>`"'!@$%()=+{}]/g, "");
-  }
+  },
+  clearMessages: function() {
+    $('#chats').empty();
+  },
+  addMessage: function(message) {
+    $('#chats').append('<li>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</li>')
+  },
+  addRoom: function(roomname) {
+    $('#roomSelect').append('<button class = "room" id = "' + roomname + '">' + roomname + '</button>');
+  },
+  currentRoom: ''
 };
+$(document).ready(function() {
+  window.setInterval(function() {
+    app.fetch();
+  }, 1000);
+});
+
+
