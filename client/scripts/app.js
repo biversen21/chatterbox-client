@@ -24,7 +24,8 @@ var app = {
     $.ajax({
       url: this.server,
       type: 'GET',
-      //data: JSON.parse(message),
+      data: {'order' : '-createdAt'},
+      // data: {'order' : 'roomName'},
       contentType: 'application/json',
       success: function (data) {
         // console.log(data);
@@ -43,7 +44,7 @@ var app = {
         }
         buttons = $('button')
         buttons.click(function(){
-          console.log(this);
+          app.currentRoom = this.id;
         });
       },
       error: function (data) {
@@ -59,17 +60,20 @@ var app = {
     $('#chats').empty();
   },
   addMessage: function(message) {
-    $('#chats').append('<li>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</li>')
+    if (message.roomname === app.currentRoom || app.currentRoom === undefined){
+      $('#chats').append('<li>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</li>')
+    }
   },
   addRoom: function(roomname) {
     $('#roomSelect').append('<button class = "room" id = "' + roomname + '">' + roomname + '</button>');
   },
-  currentRoom: ''
+  currentRoom: undefined
 };
 $(document).ready(function() {
   window.setInterval(function() {
     app.fetch();
   }, 1000);
+
 });
 
 
