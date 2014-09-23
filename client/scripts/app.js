@@ -5,7 +5,6 @@ var app = {
   server: 'https://api.parse.com/1/classes/chatterbox',
   init: function() {},
   send: function(message) {
-    console.log(message);
     $.ajax({
       url: this.server,
       type: 'POST',
@@ -25,27 +24,37 @@ var app = {
       url: this.server,
       type: 'GET',
       data: {'order' : '-createdAt'},
-      // data: {'order' : 'roomName'},
       contentType: 'application/json',
       success: function (data) {
-        // console.log(data);
         app.clearMessages();
         $('#roomSelect').empty();
         var rooms = [];
+
         for (var i = 0; i < data.results.length; i++){
-          for (var key in data.results[i]) {
-            data.results[i][key] = app.scrubber(data.results[i][key]);
+          var currentData = data.results[i];
+          for (var key in currentData) {
+            currentData[key] = app.scrubber(currentData[key]);
           }
-          app.addMessage(data.results[i]);
-          if (rooms.indexOf(data.results[i].roomname) === -1){
-            rooms.push(data.results[i].roomname);
-            app.addRoom(data.results[i].roomname);
+          app.addMessage(currentData);
+          if (rooms.indexOf(currentData.roomname) === -1){
+            rooms.push(currentData.roomname);
+            app.addRoom(currentData.roomname);
           }
         }
-        buttons = $('button')
-        buttons.click(function(){
+
+        $('.room').click(function(){
           app.currentRoom = this.id;
         });
+
+        $('#allrooms').click(function(){
+          app.currentRoom = undefined;
+        })
+
+        $('li').click(function(){
+          var text = $(this).html();
+          var friendName = text.substring(text.indexOf('|') + 2, text.indexOf(':') - 1);
+          app.friendList.push(friendName);
+        })
       },
       error: function (data) {
         // see: https://developer.mozilla.org/en-US/docs/Web/API/console.error
@@ -54,6 +63,9 @@ var app = {
     });
   },
   scrubber: function(data) {
+    if (data.indexOf('<') !== -1 || data.indexOf('script') !== -1 || data.indexOf('JAMES') !== -1){
+      return;
+    }
     return data.replace(/[&<>`"'!@$%()=+{}]/g, "");
   },
   clearMessages: function() {
@@ -61,18 +73,40 @@ var app = {
   },
   addMessage: function(message) {
     if (message.roomname === app.currentRoom || app.currentRoom === undefined){
-      $('#chats').append('<li>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</li>')
+      if (app.friendList.indexOf(message.username) !== -1){
+        $('#chats').append('<li><b>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</b></li>');
+      } else {
+        $('#chats').append('<li>' + message.roomname + ' | ' + message.username + ' : ' + message.text + '</li>');
+      }
     }
   },
   addRoom: function(roomname) {
     $('#roomSelect').append('<button class = "room" id = "' + roomname + '">' + roomname + '</button>');
   },
-  currentRoom: undefined
+  currentRoom: undefined,
+  friendList: []
 };
+
 $(document).ready(function() {
   window.setInterval(function() {
     app.fetch();
   }, 1000);
+
+  $('#sendButton').click(function(){
+    var $url = $(location).attr('href');
+    var $userName = $url.substring($url.indexOf('username') + 9, $url.length);
+    var sendMessage = {
+      username: $userName,
+      text: $('#newMessage').val(),
+      roomname: app.currentRoom || 'lobby'
+    };
+    app.send(sendMessage);
+  });
+
+  $('#createRoom').click(function(){
+    app.currentRoom = $('#newRoom').val();
+    $('#defaults').append('<button class = "room" id = "' + app.currentRoom + '">' + app.currentRoom + '</button>');
+  });
 
 });
 
